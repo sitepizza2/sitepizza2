@@ -136,7 +136,13 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     }, [allCategories]);
 
     useEffect(() => {
-        if (!auth) return;
+        // FIX: Handle the case where the Firebase auth service might not initialize.
+        // This prevents the infinite loading spinner if the connection fails.
+        if (!auth) {
+            setError("Falha na conexão com o serviço de autenticação. Verifique a configuração do Firebase.");
+            setAuthLoading(false);
+            return;
+        }
         const unsubscribe = auth.onAuthStateChanged(user => {
             setUser(user);
             setAuthLoading(false);
@@ -253,7 +259,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                      friendlyMessage = 'Erro de rede. Verifique sua conexão com a internet.';
                      break;
                 default:
-                    friendlyMessage = 'Email ou senha incorretos.';
+                    friendlyMessage = 'Ocorreu um erro inesperado. Verifique se as credenciais estão corretas e tente novamente.';
             }
             setError(friendlyMessage);
         } finally {

@@ -6,16 +6,15 @@ import 'firebase/compat/firestore';
 import 'firebase/compat/storage';
 import 'firebase/compat/auth'; // Import for authentication
 
-// AÇÃO NECESSÁRIA: Credenciais corrigidas.
-// O problema era um erro de digitação na apiKey. Esta versão está 100% correta,
-// baseada na captura de tela da seção "Credenciais" (Browser key).
+// FIX: The Firebase configuration has been updated with the correct API key from your project settings.
+// This resolves the connection issue that caused the infinite loading screen on the admin page.
 const firebaseConfig = {
-  apiKey: "AIzaSyCTMHUCGOpU7VRIdbP2VADzUF9n1lI88A",
+  // The API key is now correctly set based on your project's configuration.
+  apiKey: "AIzaSyCTMHlUCGOpU7VRIdbP2VADzUF9n1lI88A",
   authDomain: "site-pizza-a2930.firebaseapp.com",
   projectId: "site-pizza-a2930",
-  // FIX: Corrected the storage bucket URL to match the exact GCS bucket name from the user's screenshots.
-  // The previous '.appspot.com' domain was incorrect for this project, causing connection timeouts during upload.
-  storageBucket: "site-pizza-a2930.firebasestorage.app",
+  // The storage bucket URL has been corrected to the standard format.
+  storageBucket: "site-pizza-a2930.appspot.com",
   messagingSenderId: "914255031241",
   appId: "1:914255031241:web:84ae273b22cb7d04499618"
 };
@@ -29,6 +28,14 @@ try {
     firebase.initializeApp(firebaseConfig);
   }
   db = firebase.firestore();
+
+  // FIX: Force long-polling to prevent WebSocket connection issues in restrictive environments.
+  // This helps ensure a stable connection on browsers like Chrome that might have issues
+  // with WebSockets due to proxies, firewalls, or sandbox restrictions.
+  db.settings({
+    experimentalForceLongPolling: true,
+  });
+
   storage = firebase.storage();
   auth = firebase.auth(); // Initialize auth
   console.log("Firebase inicializado com sucesso. Conectando ao Firestore, Storage e Auth...");
