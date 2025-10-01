@@ -1,90 +1,79 @@
-// FIX: Updated all functions to use Firebase v8 syntax to resolve module import errors.
-import { db, storage } from './firebase';
+
+import { collection, doc, setDoc, addDoc, updateDoc, deleteDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
+import { db } from './firebase';
 import { Product, Category } from '../types';
 
 export const updateStoreStatus = async (isOnline: boolean): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const statusRef = db.doc('store_config/status');
-    await statusRef.set({ isOpen: isOnline }, { merge: true });
-};
-
-// Image Upload Function
-export const uploadImage = async (file: File): Promise<string> => {
-    if (!storage) {
-        throw new Error("Firebase Storage não está inicializado.");
-    }
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `products/${new Date().getTime()}_${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
-    const storageRef = storage.ref(fileName);
-
-    const snapshot = await storageRef.put(file);
-    const downloadURL = await snapshot.ref.getDownloadURL();
-    
-    return downloadURL;
+    if (!db) throw new Error("Firestore not initialized");
+    const statusRef = doc(db, 'store_config', 'status');
+    await setDoc(statusRef, { isOpen: isOnline }, { merge: true });
 };
 
 // Product Functions
 export const addProduct = async (productData: Omit<Product, 'id'>): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    await db.collection('products').add(productData);
+    if (!db) throw new Error("Firestore not initialized");
+    await addDoc(collection(db, 'products'), productData);
 };
 
-export const updateProduct = async (productId: string, productData: Omit<Product, 'id' | 'active'>): Promise<void> => {
-    if (!productId) throw new Error("Product ID is missing for update.");
-    if (!db) throw new Error("Firestore is not initialized.");
-    const productRef = db.collection('products').doc(productId);
-    await productRef.update(productData as { [key: string]: any });
+export const updateProduct = async (product: Product): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const { id, ...productData } = product;
+    if (!id) throw new Error("Product ID is missing for update.");
+    const productRef = doc(db, 'products', id);
+    await updateDoc(productRef, productData as { [key: string]: any });
 };
 
 export const deleteProduct = async (productId: string): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    if (!productId) throw new Error("Invalid Product ID for deletion.");
-    const productRef = db.collection('products').doc(productId);
-    await productRef.delete();
+    if (!db) throw new Error("Firestore not initialized");
+    const productRef = doc(db, 'products', productId);
+    await deleteDoc(productRef);
 };
 
-export const updateProductsOrder = async (productsToUpdate: { id: string; orderIndex: number }[]): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const batch = db.batch();
-    productsToUpdate.forEach(productUpdate => {
-        const productRef = db.collection('products').doc(productUpdate.id);
-        batch.update(productRef, { orderIndex: productUpdate.orderIndex });
+export const reorderProducts = async (productsToUpdate: Product[]): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const batch = writeBatch(db);
+    productsToUpdate.forEach(product => {
+        if (product.id) {
+            const productRef = doc(db, 'products', product.id);
+            batch.update(productRef, { orderIndex: product.orderIndex });
+        }
     });
     await batch.commit();
 };
 
-
 // Category Functions
 export const addCategory = async (categoryData: Omit<Category, 'id'>): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    await db.collection('categories').add(categoryData);
+    if (!db) throw new Error("Firestore not initialized");
+    await addDoc(collection(db, 'categories'), categoryData);
 };
 
-export const updateCategory = async (categoryId: string, categoryData: Omit<Category, 'id' | 'active' | 'order'>): Promise<void> => {
-    if (!categoryId) throw new Error("Category ID is missing for update.");
-    if (!db) throw new Error("Firestore is not initialized.");
-    const categoryRef = db.collection('categories').doc(categoryId);
-    await categoryRef.update(categoryData as { [key: string]: any });
+export const updateCategory = async (category: Category): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const { id, ...categoryData } = category;
+    if (!id) throw new Error("Category ID is missing for update.");
+    const categoryRef = doc(db, 'categories', id);
+    await updateDoc(categoryRef, categoryData as { [key: string]: any });
 };
 
 export const deleteCategory = async (categoryId: string, allProducts: Product[]): Promise<void> => {
-    if (!categoryId) throw new Error("Invalid document reference. Document references must have an even number of segments, but categories has 1.");
+    if (!db) throw new Error("Firestore not initialized");
     // Safety check: prevent deletion if products are using this category
     const isCategoryInUse = allProducts.some(product => product.categoryId === categoryId);
     if (isCategoryInUse) {
         throw new Error("Não é possível excluir esta categoria, pois ela está sendo usada por um ou mais produtos.");
     }
-    if (!db) throw new Error("Firestore is not initialized.");
-    const categoryRef = db.collection('categories').doc(categoryId);
-    await categoryRef.delete();
+    const categoryRef = doc(db, 'categories', categoryId);
+    await deleteDoc(categoryRef);
 };
 
-export const updateCategoriesOrder = async (categoriesToUpdate: { id: string; order: number }[]): Promise<void> => {
-    if (!db) throw new Error("Firestore is not initialized.");
-    const batch = db.batch();
-    categoriesToUpdate.forEach(categoryUpdate => {
-        const categoryRef = db.collection('categories').doc(categoryUpdate.id);
-        batch.update(categoryRef, { order: categoryUpdate.order });
+export const reorderCategories = async (categoriesToUpdate: Category[]): Promise<void> => {
+    if (!db) throw new Error("Firestore not initialized");
+    const batch = writeBatch(db);
+    categoriesToUpdate.forEach((category) => {
+        if (category.id) {
+            const categoryRef = doc(db, 'categories', category.id);
+            batch.update(categoryRef, { order: category.order });
+        }
     });
     await batch.commit();
 };

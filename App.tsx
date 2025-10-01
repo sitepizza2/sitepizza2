@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, CartItem, OrderDetails } from './types';
 import { Header } from './components/Header';
@@ -14,8 +13,7 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { db } from './services/firebase';
 import * as firebaseService from './services/firebaseService';
 import { seedDatabase } from './services/seed'; // Importar a função de seed
-// FIX: Removed modular imports from 'firebase/firestore' as they are not compatible with the project's Firebase version.
-// The logic is updated to use the v8 namespaced syntax.
+import { collection, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 
 const App: React.FC = () => {
@@ -87,9 +85,8 @@ const App: React.FC = () => {
         };
 
         // Listener for store status
-        // FIX: Updated to Firebase v8 syntax.
-        const statusDocRef = db.doc('store_config/status');
-        const unsubStatus = statusDocRef.onSnapshot(doc => {
+        const statusDocRef = doc(db, 'store_config', 'status');
+        const unsubStatus = onSnapshot(statusDocRef, doc => {
             const data = doc.data();
             if (data) {
                 setIsStoreOnline(data.isOpen);
@@ -97,9 +94,8 @@ const App: React.FC = () => {
         }, err => handleConnectionError(err, "store status"));
 
         // Listener for categories
-        // FIX: Updated to Firebase v8 syntax.
-        const categoriesQuery = db.collection('categories').orderBy('order');
-        const unsubCategories = categoriesQuery.onSnapshot(snapshot => {
+        const categoriesQuery = query(collection(db, 'categories'), orderBy('order'));
+        const unsubCategories = onSnapshot(categoriesQuery, snapshot => {
             const fetchedCategories: Category[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
             setCategories(fetchedCategories);
             if (fetchedCategories.length > 0 && !activeMenuCategory) {
@@ -108,9 +104,8 @@ const App: React.FC = () => {
         }, err => handleConnectionError(err, "categories"));
 
         // Listener for products
-        // FIX: Updated to Firebase v8 syntax.
-        const productsQuery = db.collection('products').orderBy('orderIndex');
-        const unsubProducts = productsQuery.onSnapshot(snapshot => {
+        const productsQuery = query(collection(db, 'products'), orderBy('orderIndex'));
+        const unsubProducts = onSnapshot(productsQuery, snapshot => {
             const fetchedProducts: Product[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
             setProducts(fetchedProducts);
             setIsLoading(false);
@@ -223,15 +218,10 @@ const App: React.FC = () => {
 
     const handleSaveProduct = useCallback(async (product: Product) => {
         try {
-            const productData = { ...product };
-            // FIX: Explicitly delete the 'id' field from the data object to prevent it from being written to Firestore.
-            // This was the root cause of items being corrupted after creation.
-            delete (productData as Partial<Product>).id;
-
             if (product.id) {
-                await firebaseService.updateProduct(product.id, productData);
+                await firebaseService.updateProduct(product);
             } else {
-                await firebaseService.addProduct({ ...productData, orderIndex: products.length });
+                await firebaseService.addProduct({ ...product, orderIndex: products.length });
             }
         } catch (error) {
             console.error("Failed to save product:", error);
@@ -256,17 +246,30 @@ const App: React.FC = () => {
             alert("Erro ao atualizar status da loja. Tente novamente.");
         }
     }, []);
+
+    const handleReorderProducts = useCallback(async (reorderedProducts: Product[]) => {
+        try {
+            // Identifica apenas os produtos que realmente mudaram de ordem para otimizar a escrita no banco.
+            const changedProducts = reorderedProducts.filter(newProd => {
+                const oldProd = products.find(p => p.id === newProd.id);
+                return !oldProd || oldProd.orderIndex !== newProd.orderIndex;
+            });
+            
+            if (changedProducts.length > 0) {
+                await firebaseService.reorderProducts(changedProducts);
+            }
+        } catch (error) {
+            console.error("Failed to reorder products:", error);
+            alert("Erro ao reordenar produtos. Tente novamente.");
+        }
+    }, [products]);
     
     const handleSaveCategory = useCallback(async (category: Category) => {
         try {
-            const categoryData = { ...category };
-            // FIX: Explicitly delete the 'id' field from the data object to prevent it from being written to Firestore.
-            delete (categoryData as Partial<Category>).id;
-
             if (category.id) {
-                await firebaseService.updateCategory(category.id, categoryData);
+                await firebaseService.updateCategory(category);
             } else {
-                await firebaseService.addCategory({ ...categoryData, order: categories.length });
+                await firebaseService.addCategory({ ...category, order: categories.length });
             }
         } catch (error) {
             console.error("Failed to save category:", error);
@@ -283,23 +286,24 @@ const App: React.FC = () => {
         }
     }, [products]);
 
-    const handleReorderProducts = useCallback(async (productsToUpdate: { id: string; orderIndex: number }[]) => {
+    const handleReorderCategories = useCallback(async (reorderedCategories: Category[]) => {
         try {
-            await firebaseService.updateProductsOrder(productsToUpdate);
-        } catch (error) {
-            console.error("Failed to reorder products:", error);
-            alert("Erro ao reordenar produtos. A página pode precisar ser atualizada para refletir a ordem correta.");
-        }
-    }, []);
-
-    const handleReorderCategories = useCallback(async (categoriesToUpdate: { id: string; order: number }[]) => {
-        try {
-            await firebaseService.updateCategoriesOrder(categoriesToUpdate);
+            // Otimização: atualiza apenas as categorias cuja ordem foi alterada.
+            const categoriesWithNewOrder = reorderedCategories.map((cat, index) => ({ ...cat, order: index }));
+    
+            const changedCategories = categoriesWithNewOrder.filter(newCat => {
+                const oldCat = categories.find(c => c.id === newCat.id);
+                return !oldCat || oldCat.order !== newCat.order;
+            });
+    
+            if (changedCategories.length > 0) {
+                await firebaseService.reorderCategories(changedCategories);
+            }
         } catch (error) {
             console.error("Failed to reorder categories:", error);
-            alert("Erro ao reordenar categorias. A página pode precisar ser atualizada para refletir a ordem correta.");
+            alert("Erro ao reordenar categorias. Tente novamente.");
         }
-    }, []);
+    }, [categories]);
 
     const cartTotalItems = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
@@ -349,9 +353,9 @@ const App: React.FC = () => {
                     onSaveProduct={handleSaveProduct}
                     onDeleteProduct={handleDeleteProduct}
                     onStoreStatusChange={handleStoreStatusChange}
+                    onReorderProducts={handleReorderProducts}
                     onSaveCategory={handleSaveCategory}
                     onDeleteCategory={handleDeleteCategory}
-                    onReorderProducts={handleReorderProducts}
                     onReorderCategories={handleReorderCategories}
                     onSeedDatabase={seedDatabase}
                 />
