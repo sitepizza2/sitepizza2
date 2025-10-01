@@ -355,41 +355,25 @@ const App: React.FC = () => {
         }
     }, [products, addToast]);
 
-    const handleReorderProducts = useCallback(async (reorderedProducts: Product[]) => {
-        const originalProducts = [...products];
-        setProducts(reorderedProducts); // Optimistic update
-
+    const handleReorderProducts = useCallback(async (productsToUpdate: { id: string; orderIndex: number }[]) => {
         try {
-            const productsToUpdate = reorderedProducts.map((p, index) => ({
-                id: p.id,
-                orderIndex: index,
-            }));
             await firebaseService.updateProductsOrder(productsToUpdate);
             addToast("Ordem dos produtos atualizada.", 'success');
         } catch (error) {
             console.error("Failed to reorder products:", error);
             addToast("Erro ao reordenar produtos.", 'error');
-            setProducts(originalProducts); // Rollback on failure
         }
-    }, [products, addToast]);
+    }, [addToast]);
 
-    const handleReorderCategories = useCallback(async (reorderedCategories: Category[]) => {
-        const originalCategories = [...categories];
-        setCategories(reorderedCategories); // Optimistic update
-
+    const handleReorderCategories = useCallback(async (categoriesToUpdate: { id: string; order: number }[]) => {
         try {
-            const categoriesToUpdate = reorderedCategories.map((c, index) => ({
-                id: c.id,
-                order: index,
-            }));
             await firebaseService.updateCategoriesOrder(categoriesToUpdate);
             addToast("Ordem das categorias atualizada.", 'success');
         } catch (error) {
             console.error("Failed to reorder categories:", error);
             addToast("Erro ao reordenar categorias.", 'error');
-            setCategories(originalCategories); // Rollback on failure
         }
-    }, [categories, addToast]);
+    }, [addToast]);
 
     const handleSaveSiteSettings = useCallback(async (settings: SiteSettings, files: { [key: string]: File | null }) => {
         try {

@@ -1,6 +1,4 @@
-// FIX: The following imports were updated to use the Firebase v9 compatibility layer (`/compat`).
-// This is necessary to support the existing v8 (namespaced) syntax throughout the application
-// while using a modern version of the Firebase SDK, resolving the namespace and property errors.
+
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import 'firebase/compat/storage';
