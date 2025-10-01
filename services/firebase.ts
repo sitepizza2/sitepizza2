@@ -12,9 +12,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCTMHUCGOpU7VRIdbP2VADzUF9n1lI88A",
   authDomain: "site-pizza-a2930.firebaseapp.com",
   projectId: "site-pizza-a2930",
-  // FIX: Corrected the storage bucket URL to match the exact GCS bucket name from the user's screenshots.
-  // The previous '.appspot.com' domain was incorrect for this project, causing connection timeouts during upload.
-  storageBucket: "site-pizza-a2930.firebasestorage.app",
+  storageBucket: "site-pizza-a2930.appspot.com", // FIX: Corrected the storage bucket URL. The SDK expects the standard '.appspot.com' domain.
   messagingSenderId: "914255031241",
   appId: "1:914255031241:web:84ae273b22cb7d04499618"
 };
