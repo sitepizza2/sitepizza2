@@ -84,7 +84,6 @@ const App: React.FC = () => {
     const [toasts, setToasts] = useState<Toast[]>([]);
     const [siteSettings, setSiteSettings] = useState<SiteSettings>(defaultSiteSettings);
     const [suggestedNextCategoryId, setSuggestedNextCategoryId] = useState<string | null>(null);
-    const [showFinalizeButtonTrigger, setShowFinalizeButtonTrigger] = useState<boolean>(false);
     
     const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
         const id = Date.now();
@@ -226,20 +225,15 @@ const App: React.FC = () => {
             }
         });
         
+        // Guided ordering flow: suggest the next category instead of forcing it.
         const sortedActiveCategories = [...categories].sort((a,b) => a.order - b.order).filter(c => c.active);
         const currentCategoryIndex = sortedActiveCategories.findIndex(c => c.id === product.categoryId);
-        const lastCategoryId = sortedActiveCategories.length > 0 ? sortedActiveCategories[sortedActiveCategories.length - 1].id : null;
 
-        if (product.categoryId === lastCategoryId) {
-            setShowFinalizeButtonTrigger(true);
-            setSuggestedNextCategoryId(null); 
+        if (currentCategoryIndex > -1 && currentCategoryIndex < sortedActiveCategories.length - 1) {
+            const nextCategory = sortedActiveCategories[currentCategoryIndex + 1];
+            setSuggestedNextCategoryId(nextCategory.id);
         } else {
-            if (currentCategoryIndex > -1 && currentCategoryIndex < sortedActiveCategories.length - 1) {
-                const nextCategory = sortedActiveCategories[currentCategoryIndex + 1];
-                setSuggestedNextCategoryId(nextCategory.id);
-            } else {
-                setSuggestedNextCategoryId(null);
-            }
+            setSuggestedNextCategoryId(null); // No more categories to suggest
         }
 
     }, [categories]);
@@ -446,8 +440,6 @@ const App: React.FC = () => {
                         setSuggestedNextCategoryId={setSuggestedNextCategoryId}
                         cartItemCount={cartTotalItems}
                         onCartClick={() => setIsCartOpen(true)}
-                        showFinalizeButtonTrigger={showFinalizeButtonTrigger}
-                        setShowFinalizeButtonTrigger={setShowFinalizeButtonTrigger}
                     />
                 )}
                 <div id="sobre">
