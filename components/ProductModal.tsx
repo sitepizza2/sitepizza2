@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Product, Category } from '../types';
 import * as firebaseService from '../services/firebaseService';
 import { CameraModal } from './CameraModal';
-import { GoogleGenAI } from '@google/genai';
 
 interface ProductModalProps {
     isOpen: boolean;
@@ -10,10 +9,9 @@ interface ProductModalProps {
     onSave: (product: Product) => Promise<void>;
     product: Product | null;
     categories: Category[];
-    addToast: (message: string, type?: 'success' | 'error') => void;
 }
 
-export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, product, categories, addToast }) => {
+export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onSave, product, categories }) => {
     const getInitialFormData = (): Omit<Product, 'id' | 'active'> => ({
         name: '',
         description: '',
@@ -30,7 +28,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
     const [imagePreview, setImagePreview] = useState<string>('');
     const [isUploading, setIsUploading] = useState(false);
     const [isCameraOpen, setIsCameraOpen] = useState(false);
-    const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -95,36 +92,6 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
         setFormData(prev => ({ ...prev, imageUrl: '' }));
         setIsCameraOpen(false);
     };
-    
-    const handleGenerateDescription = async () => {
-        setIsGeneratingDescription(true);
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-            const categoryName = categories.find(c => c.id === formData.categoryId)?.name || 'geral';
-            
-            const prompt = `Crie uma descrição de produto curta, apetitosa e envolvente para um item de cardápio chamado "${formData.name}". Este item pertence à categoria "${categoryName}". A descrição deve ser em português do Brasil, ter no máximo 150 caracteres e não deve incluir o nome do produto. Foque nos ingredientes e na sensação de saboreá-lo.`;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: prompt,
-            });
-
-            let description = response.text.trim();
-            // Remove potential wrapping quotes from the AI response
-            if ((description.startsWith('"') && description.endsWith('"')) || (description.startsWith("'") && description.endsWith("'"))) {
-                description = description.substring(1, description.length - 1);
-            }
-            
-            setFormData({ ...formData, description });
-            addToast("Descrição gerada com sucesso!", 'success');
-
-        } catch (error) {
-            console.error("Error generating description:", error);
-            addToast("Falha ao gerar descrição com IA. Tente novamente.", 'error');
-        } finally {
-            setIsGeneratingDescription(false);
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -166,18 +133,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                                 <input name="name" value={formData.name} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
                             </div>
                             <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className="block text-sm font-semibold">Descrição *</label>
-                                    <button 
-                                        type="button" 
-                                        onClick={handleGenerateDescription} 
-                                        disabled={!formData.name || isGeneratingDescription} 
-                                        className="text-xs bg-accent/20 text-accent font-semibold py-1 px-2 rounded-md hover:bg-accent/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-colors"
-                                    >
-                                        {isGeneratingDescription ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-magic"></i>}
-                                        <span>Gerar com IA</span>
-                                    </button>
-                                </div>
+                                <label className="block text-sm font-semibold mb-1">Descrição *</label>
                                 <textarea name="description" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" rows={3} required />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

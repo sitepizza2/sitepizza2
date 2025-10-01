@@ -24,7 +24,6 @@ interface AdminSectionProps {
     onReorderCategories: (reorderedCategories: Category[]) => Promise<void>;
     onSeedDatabase: () => Promise<void>;
     onSaveSiteSettings: (settings: SiteSettings, files: { [key: string]: File | null }) => Promise<void>;
-    addToast: (message: string, type?: 'success' | 'error') => void;
 }
 
 interface SortableProductItemProps {
@@ -109,7 +108,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     allProducts, allCategories, isStoreOnline, siteSettings,
     onSaveProduct, onDeleteProduct, onStoreStatusChange,
     onSaveCategory, onDeleteCategory, onReorderProducts, onReorderCategories,
-    onSeedDatabase, onSaveSiteSettings, addToast
+    onSeedDatabase, onSaveSiteSettings
 }) => {
     const [user, setUser] = useState<firebase.User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
@@ -522,7 +521,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                 onSave={onSaveProduct}
                 product={editingProduct}
                 categories={allCategories}
-                addToast={addToast}
             />
             <CategoryModal
                 isOpen={isCategoryModalOpen}

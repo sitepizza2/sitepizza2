@@ -199,7 +199,7 @@ const App: React.FC = () => {
             unsubCategories();
             unsubProducts();
         };
-    }, []);
+    }, [activeMenuCategory]);
     
     useEffect(() => {
         localStorage.setItem('santaSensacaoCart', JSON.stringify(cart));
@@ -489,7 +489,6 @@ const App: React.FC = () => {
                     onReorderCategories={handleReorderCategories}
                     onSeedDatabase={seedDatabase}
                     onSaveSiteSettings={handleSaveSiteSettings}
-                    addToast={addToast}
                 />
             </main>
 
