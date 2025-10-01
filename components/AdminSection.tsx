@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, Category, SiteSettings } from '../types';
+import { Product, Category } from '../types';
 import { ProductModal } from './ProductModal';
 import { CategoryModal } from './CategoryModal';
-import { SiteCustomizationTab } from './SiteCustomizationTab';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -11,7 +10,6 @@ interface AdminSectionProps {
     allProducts: Product[];
     allCategories: Category[];
     isStoreOnline: boolean;
-    siteSettings: SiteSettings;
     onSaveProduct: (product: Product) => Promise<void>;
     onDeleteProduct: (productId: string) => Promise<void>;
     onStoreStatusChange: (isOnline: boolean) => Promise<void>;
@@ -20,7 +18,6 @@ interface AdminSectionProps {
     onReorderProducts: (productsToUpdate: { id: string; orderIndex: number }[]) => Promise<void>;
     onReorderCategories: (categoriesToUpdate: { id: string; order: number }[]) => Promise<void>;
     onSeedDatabase: () => Promise<void>;
-    onSaveSiteSettings: (settings: SiteSettings, files: { [key: string]: File | null }) => Promise<void>;
 }
 
 interface SortableProductItemProps {
@@ -102,10 +99,10 @@ const SortableCategoryItem: React.FC<SortableCategoryItemProps> = ({ category, o
 };
 
 export const AdminSection: React.FC<AdminSectionProps> = ({ 
-    allProducts, allCategories, isStoreOnline, siteSettings,
+    allProducts, allCategories, isStoreOnline, 
     onSaveProduct, onDeleteProduct, onStoreStatusChange,
     onSaveCategory, onDeleteCategory, onReorderProducts, onReorderCategories,
-    onSeedDatabase, onSaveSiteSettings
+    onSeedDatabase 
 }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [activeTab, setActiveTab] = useState('status');
@@ -265,10 +262,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
             const backupData = {
                 products: allProducts,
                 categories: allCategories,
-                store_config: { 
-                    status: { isOpen: isStoreOnline },
-                    site_settings: siteSettings 
-                },
+                store_config: { status: { isOpen: isStoreOnline } },
                 backupDate: new Date().toISOString(),
             };
     
@@ -338,10 +332,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                                 <i className="fas fa-tags w-5 text-center"></i>
                                 <span>Categorias</span>
                             </button>
-                             <button onClick={() => setActiveTab('customization')} className={`flex-shrink-0 inline-flex items-center gap-2 py-3 px-4 font-semibold text-sm transition-colors ${activeTab === 'customization' ? 'border-b-2 border-accent text-accent' : 'text-gray-500 hover:text-gray-700'}`}>
-                                <i className="fas fa-paint-brush w-5 text-center"></i>
-                                <span>Personalização</span>
-                            </button>
                             <button onClick={() => setActiveTab('data')} className={`flex-shrink-0 inline-flex items-center gap-2 py-3 px-4 font-semibold text-sm transition-colors ${activeTab === 'data' ? 'border-b-2 border-accent text-accent' : 'text-gray-500 hover:text-gray-700'}`}>
                                 <i className="fas fa-database w-5 text-center"></i>
                                 <span>Dados</span>
@@ -364,13 +354,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                         </div>
                     )}
                     
-                    {activeTab === 'customization' && (
-                        <SiteCustomizationTab
-                            settings={siteSettings}
-                            onSave={onSaveSiteSettings}
-                        />
-                    )}
-
                     {activeTab === 'products' && (
                         <div>
                             <div className="flex justify-between items-center mb-4">
