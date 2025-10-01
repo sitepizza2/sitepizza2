@@ -15,7 +15,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ settings }) => {
                             <i className="fas fa-award mr-2"></i>{settings.aboutTag}
                         </span>
                         <h2 className="text-4xl font-bold text-text-on-light mb-6">{settings.aboutTitle}</h2>
-                        <p className="text-gray-700 leading-relaxed mb-6 whitespace-pre-wrap">
+                        <p className="text-gray-700 leading-relaxed mb-6">
                            {settings.aboutDescription}
                         </p>
                         <div className="space-y-3">
