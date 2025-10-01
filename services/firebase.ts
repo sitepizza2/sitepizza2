@@ -13,7 +13,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCTMHlUCGOpU7VRIdbP2VADzUF9n1lI88A",
   authDomain: "site-pizza-a2930.firebaseapp.com",
   projectId: "site-pizza-a2930",
-  // The storage bucket URL has been corrected to the standard format.
+  // CORRECTED: The storage bucket URL must use the '.appspot.com' domain for the SDK to connect properly.
   storageBucket: "site-pizza-a2930.appspot.com",
   messagingSenderId: "914255031241",
   appId: "1:914255031241:web:84ae273b22cb7d04499618"
