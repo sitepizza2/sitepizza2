@@ -15,17 +15,15 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ settings }) => {
                             <i className="fas fa-award mr-2"></i>{settings.aboutTag}
                         </span>
                         <h2 className="text-4xl font-bold text-text-on-light mb-6">{settings.aboutTitle}</h2>
-                        <p className="text-gray-700 leading-relaxed mb-6 whitespace-pre-wrap">
+                        <p className="text-gray-700 leading-relaxed mb-6">
                            {settings.aboutDescription}
                         </p>
                         <div className="space-y-3">
                             {settings.aboutList.map((item, index) => (
-                                item.text && (
-                                    <div key={index} className="flex items-center gap-3">
-                                        <i className={`${item.icon} text-accent`}></i>
-                                        <span>{item.text}</span>
-                                    </div>
-                                )
+                                <div key={index} className="flex items-center gap-3">
+                                    <i className="fas fa-check-circle text-accent"></i>
+                                    <span>{item}</span>
+                                </div>
                             ))}
                         </div>
                     </div>

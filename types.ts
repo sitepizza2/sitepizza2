@@ -48,5 +48,5 @@ export interface SiteSettings {
     aboutTag: string;
     aboutTitle: string;
     aboutDescription: string;
-    aboutList: Array<{ icon: string; text: string; }>;
+    aboutList: string[];
 }
