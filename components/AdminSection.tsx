@@ -136,13 +136,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     }, [allCategories]);
 
     useEffect(() => {
-        // FIX: Handle the case where the Firebase auth service might not initialize.
-        // This prevents the infinite loading spinner if the connection fails.
-        if (!auth) {
-            setError("Falha na conexão com o serviço de autenticação. Verifique a configuração do Firebase.");
-            setAuthLoading(false);
-            return;
-        }
+        if (!auth) return;
         const unsubscribe = auth.onAuthStateChanged(user => {
             setUser(user);
             setAuthLoading(false);
