@@ -63,7 +63,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) =
             phone: phone || "Não informado", // Adiciona o telefone ou um valor padrão se estiver vazio.
             subject: finalSubject,
             message: message,
-            honeypot: "" // CORREÇÃO: O nome do campo deve ser 'honeypot' e não 'botcheck'.
+            botcheck: "" // Campo "honeypot" para proteção contra spam.
         };
 
         try {
