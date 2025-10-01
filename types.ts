@@ -37,16 +37,3 @@ export interface OrderDetails {
     changeAmount?: string;
     notes: string;
 }
-
-export interface SiteSettings {
-    logoUrl: string;
-    heroSlogan: string;
-    heroTitle: string;
-    heroSubtitle: string;
-    heroBgUrl: string;
-    aboutImageUrl: string;
-    aboutTag: string;
-    aboutTitle: string;
-    aboutDescription: string;
-    aboutList: Array<{ icon: string; text: string; }>;
-}
