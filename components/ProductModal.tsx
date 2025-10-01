@@ -21,6 +21,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
     });
     
     const [formData, setFormData] = useState<Omit<Product, 'id' | 'active'>>(getInitialFormData());
+    const [showBadgeTooltip, setShowBadgeTooltip] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -91,28 +92,30 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, onClose, onS
                                     {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                                 </select>
                             </div>
-                            <div>
+                            <div className="relative">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <label htmlFor="badge-input" className="block text-sm font-semibold">Selo de Destaque (opcional)</label>
-                                    <div className="relative group flex items-center">
-                                        <button type="button" tabIndex={0} className="w-5 h-5 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center text-xs font-bold cursor-help focus:outline-none focus:ring-2 focus:ring-accent">
-                                            ?
-                                        </button>
-                                        <div role="tooltip" className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-gray-800 text-white text-xs rounded-lg shadow-lg z-10
-                                            opacity-0 invisible pointer-events-none 
-                                            group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto
-                                            group-focus-within:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto
-                                            transition-all duration-200 ease-in-out transform scale-95 group-hover:scale-100 group-focus-within:scale-100">
-                                            
-                                            Use selos para destacar produtos no cardápio. Eles aparecem como uma pequena etiqueta sobre a imagem do item.
-                                            <br/><br/>
-                                            <strong className="font-bold">Exemplos:</strong> "Popular", "Novo", "Promoção", "Mais Vendido".
-                                            
-                                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-[6px] border-t-gray-800"></div>
-                                        </div>
-                                    </div>
+                                    <label className="block text-sm font-semibold">Selo de Destaque (opcional)</label>
+                                    <button
+                                        type="button"
+                                        onMouseEnter={() => setShowBadgeTooltip(true)}
+                                        onMouseLeave={() => setShowBadgeTooltip(false)}
+                                        onClick={() => setShowBadgeTooltip(!showBadgeTooltip)}
+                                        className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                                        aria-label="Informações sobre o selo de destaque"
+                                    >
+                                        <i className="fas fa-question-circle"></i>
+                                    </button>
                                 </div>
-                                <input id="badge-input" name="badge" value={formData.badge} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" placeholder="Ex: Popular" />
+                                {showBadgeTooltip && (
+                                    <div 
+                                        style={{ animation: 'fadeInUp 0.2s ease-out' }}
+                                        className="absolute bottom-full left-0 mb-2 w-full max-w-xs bg-gray-800 text-white text-sm rounded-lg p-3 z-10 shadow-lg">
+                                        <p>Um selo para destacar o produto no cardápio. Aparecerá como uma pequena etiqueta na imagem.</p>
+                                        <p className="mt-1 font-semibold">Exemplos: 'Popular', 'Novo', 'Promoção'.</p>
+                                        <div className="absolute left-4 -bottom-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+                                    </div>
+                                )}
+                                <input name="badge" value={formData.badge} onChange={handleChange} className="w-full px-3 py-2 border rounded-md" placeholder="Ex: Novo, Popular" />
                             </div>
                         </div>
                         <div>
