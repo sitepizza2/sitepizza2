@@ -6,8 +6,6 @@ import { SiteCustomizationTab } from './SiteCustomizationTab';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import firebase from 'firebase/compat/app';
-import { auth } from '../services/firebase';
 
 interface AdminSectionProps {
     allProducts: Product[];
@@ -109,14 +107,12 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     onSaveCategory, onDeleteCategory, onReorderProducts, onReorderCategories,
     onSeedDatabase, onSaveSiteSettings
 }) => {
-    const [user, setUser] = useState<firebase.User | null>(null);
-    const [authLoading, setAuthLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [activeTab, setActiveTab] = useState('status');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [showAdminPanel, setShowAdminPanel] = useState(window.location.hash === '#admin');
-    const [isLoggingIn, setIsLoggingIn] = useState(false);
     
     const [localProducts, setLocalProducts] = useState<Product[]>(allProducts);
     const [localCategories, setLocalCategories] = useState<Category[]>(allCategories);
@@ -134,15 +130,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     useEffect(() => {
         setLocalCategories([...allCategories].sort((a, b) => a.order - b.order));
     }, [allCategories]);
-
-    useEffect(() => {
-        if (!auth) return;
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            setUser(user);
-            setAuthLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
 
     useEffect(() => {
         const handleHashChange = () => {
@@ -224,53 +211,21 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
         });
     };
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
-        setIsLoggingIn(true);
-        if (!auth) {
-            setError('Serviço de autenticação não disponível.');
-            setIsLoggingIn(false);
-            return;
-        }
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            // onAuthStateChanged will handle setting the user state
-        } catch (err: any) {
-            console.error("Firebase Auth Error:", err);
-            let friendlyMessage = 'Ocorreu um erro. Tente novamente.';
-            switch (err.code) {
-                case 'auth/user-not-found':
-                    friendlyMessage = 'Nenhum usuário encontrado com este e-mail.';
-                    break;
-                case 'auth/wrong-password':
-                    friendlyMessage = 'A senha está incorreta. Verifique e tente novamente.';
-                    break;
-                case 'auth/invalid-email':
-                    friendlyMessage = 'O formato do e-mail é inválido.';
-                    break;
-                case 'auth/network-request-failed':
-                     friendlyMessage = 'Erro de rede. Verifique sua conexão com a internet.';
-                     break;
-                default:
-                    friendlyMessage = 'Ocorreu um erro inesperado. Verifique se as credenciais estão corretas e tente novamente.';
-            }
-            setError(friendlyMessage);
-        } finally {
-            setIsLoggingIn(false);
+        if (email === 'admin@santa.com' && password === 'admin123') {
+            setIsLoggedIn(true);
+            setError('');
+        } else {
+            setError('Email ou senha incorretos.');
         }
     };
 
-    const handleLogout = async () => {
-        if (!auth) return;
-        try {
-            await auth.signOut();
-            setEmail('');
-            setPassword('');
-            window.location.hash = '';
-        } catch (error) {
-            console.error("Error signing out: ", error);
-        }
+    const handleLogout = () => {
+        setIsLoggedIn(false);
+        setEmail('');
+        setPassword('');
+        window.location.hash = '';
     };
 
     const handleAddNewProduct = () => {
@@ -335,18 +290,8 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     };
 
     if (!showAdminPanel) return null;
-    
-    if (authLoading) {
-        return (
-            <section id="admin" className="py-20 bg-brand-ivory-50">
-                 <div className="text-center">
-                    <i className="fas fa-spinner fa-spin text-4xl text-accent"></i>
-                </div>
-            </section>
-        );
-    }
 
-    if (!user) {
+    if (!isLoggedIn) {
         return (
             <section id="admin" className="py-20 bg-brand-ivory-50">
                 <div className="container mx-auto px-4 max-w-md">
@@ -355,20 +300,14 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                         <form onSubmit={handleLogin}>
                             <div className="mb-4">
                                 <label className="block text-gray-700 font-semibold mb-2" htmlFor="admin-email">Email</label>
-                                <input id="admin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required disabled={isLoggingIn} />
+                                <input id="admin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required />
                             </div>
                             <div className="mb-6">
                                 <label className="block text-gray-700 font-semibold mb-2" htmlFor="admin-password">Senha</label>
-                                <input id="admin-password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required disabled={isLoggingIn} />
+                                <input id="admin-password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required />
                             </div>
                             {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-                            <button type="submit" className="w-full bg-accent text-white font-bold py-3 px-6 rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center disabled:bg-opacity-70" disabled={isLoggingIn}>
-                                {isLoggingIn ? (
-                                    <i className="fas fa-spinner fa-spin"></i>
-                                ) : (
-                                    'Entrar'
-                                )}
-                            </button>
+                            <button type="submit" className="w-full bg-accent text-white font-bold py-3 px-6 rounded-lg hover:bg-opacity-90 transition-all">Entrar</button>
                         </form>
                     </div>
                 </div>

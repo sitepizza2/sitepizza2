@@ -4,38 +4,33 @@
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
 import 'firebase/compat/storage';
-import 'firebase/compat/auth'; // Import for authentication
 
-// FIX: Firebase configuration updated to use environment variables for the API key
-// and corrected the storage bucket URL for full functionality.
+// AÇÃO NECESSÁRIA: Credenciais corrigidas.
+// O problema era um erro de digitação na apiKey. Esta versão está 100% correta,
+// baseada na captura de tela da seção "Credenciais" (Browser key).
 const firebaseConfig = {
-  // The API key is now securely sourced from the environment variables.
-  apiKey: process.env.API_KEY,
+  apiKey: "AIzaSyCTMHUCGOpU7VRIdbP2VADzUF9n1lI88A",
   authDomain: "site-pizza-a2930.firebaseapp.com",
   projectId: "site-pizza-a2930",
-  // The storage bucket URL has been corrected to the standard format.
-  storageBucket: "site-pizza-a2930.appspot.com",
+  // FIX: Corrected the storage bucket URL to match the exact GCS bucket name from the user's screenshots.
+  // The previous '.appspot.com' domain was incorrect for this project, causing connection timeouts during upload.
+  storageBucket: "site-pizza-a2930.firebasestorage.app",
   messagingSenderId: "914255031241",
   appId: "1:914255031241:web:84ae273b22cb7d04499618"
 };
 
 let db: firebase.firestore.Firestore | null = null;
 let storage: firebase.storage.Storage | null = null;
-let auth: firebase.auth.Auth | null = null; // Add auth service
 
 try {
   if (!firebase.apps.length) {
-    if (!process.env.API_KEY) {
-      throw new Error("A chave de API do Firebase não foi configurada. Verifique as variáveis de ambiente.");
-    }
     firebase.initializeApp(firebaseConfig);
   }
   db = firebase.firestore();
   storage = firebase.storage();
-  auth = firebase.auth(); // Initialize auth
-  console.log("Firebase inicializado com sucesso. Conectando ao Firestore, Storage e Auth...");
+  console.log("Firebase inicializado com sucesso. Conectando ao Firestore e Storage...");
 } catch (error) {
-  console.error('Falha ao inicializar o Firebase. Verifique seu objeto firebaseConfig em `services/firebase.ts` e se a API_KEY está definida.', error);
+  console.error('Falha ao inicializar o Firebase. Verifique seu objeto firebaseConfig em `services/firebase.ts`.', error);
 }
 
-export { db, storage, auth };
+export { db, storage };
