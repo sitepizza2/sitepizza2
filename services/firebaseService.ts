@@ -17,9 +17,8 @@ export const uploadImage = async (file: File): Promise<string> => {
     const fileName = `products/${new Date().getTime()}_${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
     const storageRef = storage.ref(fileName);
 
-    // Safari compatibility fix: explicitly set content type
-    const metadata = { contentType: file.type };
-    const snapshot = await storageRef.put(file, metadata);
+    // FIX: Reverted to the simpler put() method from the user's working old version.
+    const snapshot = await storageRef.put(file);
     const downloadURL = await snapshot.ref.getDownloadURL();
     
     return downloadURL;
@@ -34,9 +33,8 @@ export const uploadSiteAsset = async (file: File, assetName: string): Promise<st
     const fileName = `site/${assetName}_${new Date().getTime()}.${fileExtension}`;
     const storageRef = storage.ref(fileName);
     
-    // Safari compatibility fix: explicitly set content type
-    const metadata = { contentType: file.type };
-    const snapshot = await storageRef.put(file, metadata);
+    // FIX: Reverted to the simpler put() method for consistency and to ensure it works.
+    const snapshot = await storageRef.put(file);
     return await snapshot.ref.getDownloadURL();
 };
 
