@@ -49,6 +49,8 @@ export interface ContentSection {
     order: number;
     isVisible: boolean;
     imageUrl: string;
+    isTagVisible?: boolean;
+    tagIcon?: string;
     tag: string;
     title: string;
     description: string;
