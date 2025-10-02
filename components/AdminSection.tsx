@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Product, Category, SiteSettings } from '../types';
+import { Product, Category } from '../types';
 import { ProductModal } from './ProductModal';
 import { CategoryModal } from './CategoryModal';
-import { SiteCustomizationTab } from './SiteCustomizationTab';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import firebase from 'firebase/compat/app';
-import { auth } from '../services/firebase';
 
 interface AdminSectionProps {
     allProducts: Product[];
     allCategories: Category[];
     isStoreOnline: boolean;
-    siteSettings: SiteSettings;
     onSaveProduct: (product: Product) => Promise<void>;
     onDeleteProduct: (productId: string) => Promise<void>;
     onStoreStatusChange: (isOnline: boolean) => Promise<void>;
@@ -22,7 +18,6 @@ interface AdminSectionProps {
     onReorderProducts: (productsToUpdate: { id: string; orderIndex: number }[]) => Promise<void>;
     onReorderCategories: (categoriesToUpdate: { id: string; order: number }[]) => Promise<void>;
     onSeedDatabase: () => Promise<void>;
-    onSaveSiteSettings: (settings: SiteSettings, files: { [key: string]: File | null }) => Promise<void>;
 }
 
 interface SortableProductItemProps {
@@ -104,19 +99,17 @@ const SortableCategoryItem: React.FC<SortableCategoryItemProps> = ({ category, o
 };
 
 export const AdminSection: React.FC<AdminSectionProps> = ({ 
-    allProducts, allCategories, isStoreOnline, siteSettings,
+    allProducts, allCategories, isStoreOnline, 
     onSaveProduct, onDeleteProduct, onStoreStatusChange,
     onSaveCategory, onDeleteCategory, onReorderProducts, onReorderCategories,
-    onSeedDatabase, onSaveSiteSettings
+    onSeedDatabase 
 }) => {
-    const [user, setUser] = useState<firebase.User | null>(null);
-    const [authLoading, setAuthLoading] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [activeTab, setActiveTab] = useState('status');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [showAdminPanel, setShowAdminPanel] = useState(window.location.hash === '#admin');
-    const [isLoggingIn, setIsLoggingIn] = useState(false);
     
     const [localProducts, setLocalProducts] = useState<Product[]>(allProducts);
     const [localCategories, setLocalCategories] = useState<Category[]>(allCategories);
@@ -134,21 +127,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     useEffect(() => {
         setLocalCategories([...allCategories].sort((a, b) => a.order - b.order));
     }, [allCategories]);
-
-    useEffect(() => {
-        // FIX: Handle the case where the Firebase auth service might not initialize.
-        // This prevents the infinite loading spinner if the connection fails.
-        if (!auth) {
-            setError("Falha na conexão com o serviço de autenticação. Verifique a configuração do Firebase.");
-            setAuthLoading(false);
-            return;
-        }
-        const unsubscribe = auth.onAuthStateChanged(user => {
-            setUser(user);
-            setAuthLoading(false);
-        });
-        return () => unsubscribe();
-    }, []);
 
     useEffect(() => {
         const handleHashChange = () => {
@@ -230,53 +208,21 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
         });
     };
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
-        setIsLoggingIn(true);
-        if (!auth) {
-            setError('Serviço de autenticação não disponível.');
-            setIsLoggingIn(false);
-            return;
-        }
-        try {
-            await auth.signInWithEmailAndPassword(email, password);
-            // onAuthStateChanged will handle setting the user state
-        } catch (err: any) {
-            console.error("Firebase Auth Error:", err);
-            let friendlyMessage = 'Ocorreu um erro. Tente novamente.';
-            switch (err.code) {
-                case 'auth/user-not-found':
-                    friendlyMessage = 'Nenhum usuário encontrado com este e-mail.';
-                    break;
-                case 'auth/wrong-password':
-                    friendlyMessage = 'A senha está incorreta. Verifique e tente novamente.';
-                    break;
-                case 'auth/invalid-email':
-                    friendlyMessage = 'O formato do e-mail é inválido.';
-                    break;
-                case 'auth/network-request-failed':
-                     friendlyMessage = 'Erro de rede. Verifique sua conexão com a internet.';
-                     break;
-                default:
-                    friendlyMessage = 'Ocorreu um erro inesperado. Verifique se as credenciais estão corretas e tente novamente.';
-            }
-            setError(friendlyMessage);
-        } finally {
-            setIsLoggingIn(false);
+        if (email === 'admin@santa.com' && password === 'admin123') {
+            setIsLoggedIn(true);
+            setError('');
+        } else {
+            setError('Email ou senha incorretos.');
         }
     };
 
-    const handleLogout = async () => {
-        if (!auth) return;
-        try {
-            await auth.signOut();
-            setEmail('');
-            setPassword('');
-            window.location.hash = '';
-        } catch (error) {
-            console.error("Error signing out: ", error);
-        }
+    const handleLogout = () => {
+        setIsLoggedIn(false);
+        setEmail('');
+        setPassword('');
+        window.location.hash = '';
     };
 
     const handleAddNewProduct = () => {
@@ -316,10 +262,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
             const backupData = {
                 products: allProducts,
                 categories: allCategories,
-                store_config: { 
-                    status: { isOpen: isStoreOnline },
-                    site_settings: siteSettings 
-                },
+                store_config: { status: { isOpen: isStoreOnline } },
                 backupDate: new Date().toISOString(),
             };
     
@@ -341,18 +284,8 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     };
 
     if (!showAdminPanel) return null;
-    
-    if (authLoading) {
-        return (
-            <section id="admin" className="py-20 bg-brand-ivory-50">
-                 <div className="text-center">
-                    <i className="fas fa-spinner fa-spin text-4xl text-accent"></i>
-                </div>
-            </section>
-        );
-    }
 
-    if (!user) {
+    if (!isLoggedIn) {
         return (
             <section id="admin" className="py-20 bg-brand-ivory-50">
                 <div className="container mx-auto px-4 max-w-md">
@@ -361,20 +294,14 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                         <form onSubmit={handleLogin}>
                             <div className="mb-4">
                                 <label className="block text-gray-700 font-semibold mb-2" htmlFor="admin-email">Email</label>
-                                <input id="admin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required disabled={isLoggingIn} />
+                                <input id="admin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required />
                             </div>
                             <div className="mb-6">
                                 <label className="block text-gray-700 font-semibold mb-2" htmlFor="admin-password">Senha</label>
-                                <input id="admin-password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required disabled={isLoggingIn} />
+                                <input id="admin-password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required />
                             </div>
                             {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-                            <button type="submit" className="w-full bg-accent text-white font-bold py-3 px-6 rounded-lg hover:bg-opacity-90 transition-all flex items-center justify-center disabled:bg-opacity-70" disabled={isLoggingIn}>
-                                {isLoggingIn ? (
-                                    <i className="fas fa-spinner fa-spin"></i>
-                                ) : (
-                                    'Entrar'
-                                )}
-                            </button>
+                            <button type="submit" className="w-full bg-accent text-white font-bold py-3 px-6 rounded-lg hover:bg-opacity-90 transition-all">Entrar</button>
                         </form>
                     </div>
                 </div>
@@ -405,10 +332,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                                 <i className="fas fa-tags w-5 text-center"></i>
                                 <span>Categorias</span>
                             </button>
-                             <button onClick={() => setActiveTab('customization')} className={`flex-shrink-0 inline-flex items-center gap-2 py-3 px-4 font-semibold text-sm transition-colors ${activeTab === 'customization' ? 'border-b-2 border-accent text-accent' : 'text-gray-500 hover:text-gray-700'}`}>
-                                <i className="fas fa-paint-brush w-5 text-center"></i>
-                                <span>Personalização</span>
-                            </button>
                             <button onClick={() => setActiveTab('data')} className={`flex-shrink-0 inline-flex items-center gap-2 py-3 px-4 font-semibold text-sm transition-colors ${activeTab === 'data' ? 'border-b-2 border-accent text-accent' : 'text-gray-500 hover:text-gray-700'}`}>
                                 <i className="fas fa-database w-5 text-center"></i>
                                 <span>Dados</span>
@@ -431,13 +354,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                         </div>
                     )}
                     
-                    {activeTab === 'customization' && (
-                        <SiteCustomizationTab
-                            settings={siteSettings}
-                            onSave={onSaveSiteSettings}
-                        />
-                    )}
-
                     {activeTab === 'products' && (
                         <div>
                             <div className="flex justify-between items-center mb-4">
