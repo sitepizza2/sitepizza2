@@ -13,7 +13,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCTMHlUCGOpU7VRIdbP2VADzUF9n1lI88A",
   authDomain: "site-pizza-a2930.firebaseapp.com",
   projectId: "site-pizza-a2930",
-  // CORRECTED: The storage bucket URL must use the '.appspot.com' domain for the SDK to connect properly.
+  // The storage bucket URL has been corrected to the standard format.
   storageBucket: "site-pizza-a2930.appspot.com",
   messagingSenderId: "914255031241",
   appId: "1:914255031241:web:84ae273b22cb7d04499618"
@@ -24,23 +24,20 @@ let storage: firebase.storage.Storage | null = null;
 let auth: firebase.auth.Auth | null = null; // Add auth service
 
 try {
-  // Initialize the app instance once.
-  const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
-  
-  // Get Firestore service and apply settings.
-  db = app.firestore();
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  db = firebase.firestore();
+
+  // FIX: Force long-polling to prevent WebSocket connection issues in restrictive environments.
+  // This helps ensure a stable connection on browsers like Chrome that might have issues
+  // with WebSockets due to proxies, firewalls, or sandbox restrictions.
   db.settings({
     experimentalForceLongPolling: true,
   });
 
-  // FIX: The initialization is simplified to the standard method.
-  // This lets the SDK correctly use the 'storageBucket' from the config above,
-  // resolving the conflict that caused uploads to hang.
-  storage = app.storage();
-  
-  // Get Auth service.
-  auth = app.auth();
-  
+  storage = firebase.storage();
+  auth = firebase.auth(); // Initialize auth
   console.log("Firebase inicializado com sucesso. Conectando ao Firestore, Storage e Auth...");
 } catch (error) {
   console.error('Falha ao inicializar o Firebase. Verifique seu objeto firebaseConfig em `services/firebase.ts`.', error);
