@@ -24,20 +24,23 @@ let storage: firebase.storage.Storage | null = null;
 let auth: firebase.auth.Auth | null = null; // Add auth service
 
 try {
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-  db = firebase.firestore();
-
-  // FIX: Force long-polling to prevent WebSocket connection issues in restrictive environments.
-  // This helps ensure a stable connection on browsers like Chrome that might have issues
-  // with WebSockets due to proxies, firewalls, or sandbox restrictions.
+  // Initialize the app instance once.
+  const app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
+  
+  // Get Firestore service and apply settings.
+  db = app.firestore();
   db.settings({
     experimentalForceLongPolling: true,
   });
 
-  storage = firebase.storage();
-  auth = firebase.auth(); // Initialize auth
+  // FIX: Explicitly initialize Storage with the bucket URL.
+  // This is a more robust method that prevents connection issues where the SDK
+  // fails to resolve the default bucket from the firebaseConfig object, fixing the upload issue.
+  storage = app.storage("gs://site-pizza-a2930.appspot.com");
+  
+  // Get Auth service.
+  auth = app.auth();
+  
   console.log("Firebase inicializado com sucesso. Conectando ao Firestore, Storage e Auth...");
 } catch (error) {
   console.error('Falha ao inicializar o Firebase. Verifique seu objeto firebaseConfig em `services/firebase.ts`.', error);
