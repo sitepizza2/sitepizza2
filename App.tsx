@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, CartItem, OrderDetails } from './types';
 import { Header } from './components/Header';
@@ -13,7 +14,8 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { db } from './services/firebase';
 import * as firebaseService from './services/firebaseService';
 import { seedDatabase } from './services/seed'; // Importar a função de seed
-import { collection, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+// FIX: Removed modular imports from 'firebase/firestore' as they are not compatible with the project's Firebase version.
+// The logic is updated to use the v8 namespaced syntax.
 
 
 const App: React.FC = () => {
@@ -85,8 +87,9 @@ const App: React.FC = () => {
         };
 
         // Listener for store status
-        const statusDocRef = doc(db, 'store_config', 'status');
-        const unsubStatus = onSnapshot(statusDocRef, doc => {
+        // FIX: Updated to Firebase v8 syntax.
+        const statusDocRef = db.doc('store_config/status');
+        const unsubStatus = statusDocRef.onSnapshot(doc => {
             const data = doc.data();
             if (data) {
                 setIsStoreOnline(data.isOpen);
@@ -94,8 +97,9 @@ const App: React.FC = () => {
         }, err => handleConnectionError(err, "store status"));
 
         // Listener for categories
-        const categoriesQuery = query(collection(db, 'categories'), orderBy('order'));
-        const unsubCategories = onSnapshot(categoriesQuery, snapshot => {
+        // FIX: Updated to Firebase v8 syntax.
+        const categoriesQuery = db.collection('categories').orderBy('order');
+        const unsubCategories = categoriesQuery.onSnapshot(snapshot => {
             const fetchedCategories: Category[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
             setCategories(fetchedCategories);
             if (fetchedCategories.length > 0 && !activeMenuCategory) {
@@ -104,8 +108,9 @@ const App: React.FC = () => {
         }, err => handleConnectionError(err, "categories"));
 
         // Listener for products
-        const productsQuery = query(collection(db, 'products'), orderBy('orderIndex'));
-        const unsubProducts = onSnapshot(productsQuery, snapshot => {
+        // FIX: Updated to Firebase v8 syntax.
+        const productsQuery = db.collection('products').orderBy('orderIndex');
+        const unsubProducts = productsQuery.onSnapshot(snapshot => {
             const fetchedProducts: Product[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
             setProducts(fetchedProducts);
             setIsLoading(false);
@@ -218,10 +223,15 @@ const App: React.FC = () => {
 
     const handleSaveProduct = useCallback(async (product: Product) => {
         try {
+            const productData = { ...product };
+            // FIX: Explicitly delete the 'id' field from the data object to prevent it from being written to Firestore.
+            // This was the root cause of items being corrupted after creation.
+            delete (productData as Partial<Product>).id;
+
             if (product.id) {
-                await firebaseService.updateProduct(product);
+                await firebaseService.updateProduct(product.id, productData);
             } else {
-                await firebaseService.addProduct({ ...product, orderIndex: products.length });
+                await firebaseService.addProduct({ ...productData, orderIndex: products.length });
             }
         } catch (error) {
             console.error("Failed to save product:", error);
@@ -249,10 +259,14 @@ const App: React.FC = () => {
     
     const handleSaveCategory = useCallback(async (category: Category) => {
         try {
+            const categoryData = { ...category };
+            // FIX: Explicitly delete the 'id' field from the data object to prevent it from being written to Firestore.
+            delete (categoryData as Partial<Category>).id;
+
             if (category.id) {
-                await firebaseService.updateCategory(category);
+                await firebaseService.updateCategory(category.id, categoryData);
             } else {
-                await firebaseService.addCategory({ ...category, order: categories.length });
+                await firebaseService.addCategory({ ...categoryData, order: categories.length });
             }
         } catch (error) {
             console.error("Failed to save category:", error);
