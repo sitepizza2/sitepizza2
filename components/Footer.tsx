@@ -3,8 +3,8 @@ import { SiteSettings } from '../types';
 
 export const Footer: React.FC<{ settings: SiteSettings }> = ({ settings }) => {
     
-    const socialLinks = settings.footerLinks.filter(link => link.icon.startsWith('fab'));
-    const otherLinks = settings.footerLinks.filter(link => !link.icon.startsWith('fab'));
+    const socialLinks = settings.footerLinks?.filter(link => link.icon.startsWith('fab')) ?? [];
+    const otherLinks = settings.footerLinks?.filter(link => !link.icon.startsWith('fab')) ?? [];
 
     return (
         <footer className="bg-brand-green-700 text-text-on-dark pt-16 pb-8">

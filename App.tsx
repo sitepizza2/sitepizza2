@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, CartItem, OrderDetails, SiteSettings } from './types';
 import { Header } from './components/Header';
@@ -478,7 +480,7 @@ const App: React.FC = () => {
                 )}
                 <div id="sobre">
                     {siteSettings.contentSections
-                        .filter(section => section.isVisible)
+                        ?.filter(section => section.isVisible)
                         .sort((a, b) => a.order - b.order)
                         .map((section, index) => (
                             <DynamicContentSection key={section.id} section={section} order={index} />
