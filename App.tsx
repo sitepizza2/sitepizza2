@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, CartItem, OrderDetails } from './types';
 import { Header } from './components/Header';
@@ -14,14 +13,8 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { db } from './services/firebase';
 import * as firebaseService from './services/firebaseService';
 import { seedDatabase } from './services/seed'; // Importar a função de seed
-// FIX: Removed modular imports from 'firebase/firestore' as they are not compatible with the project's Firebase version.
-// The logic is updated to use the v8 namespaced syntax.
+import { collection, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
 
-interface Toast {
-    id: number;
-    message: string;
-    type: 'success' | 'error';
-}
 
 const App: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
@@ -34,16 +27,7 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [activeSection, setActiveSection] = useState('Início');
     const [activeMenuCategory, setActiveMenuCategory] = useState<string>('');
-    const [toasts, setToasts] = useState<Toast[]>([]);
     
-    const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
-        const id = Date.now();
-        setToasts(prevToasts => [...prevToasts, { id, message, type }]);
-        setTimeout(() => {
-            setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
-        }, 4000);
-    }, []);
-
     useEffect(() => {
         const savedCart = localStorage.getItem('santaSensacaoCart');
         if (savedCart) {
@@ -101,9 +85,8 @@ const App: React.FC = () => {
         };
 
         // Listener for store status
-        // FIX: Updated to Firebase v8 syntax.
-        const statusDocRef = db.doc('store_config/status');
-        const unsubStatus = statusDocRef.onSnapshot(doc => {
+        const statusDocRef = doc(db, 'store_config', 'status');
+        const unsubStatus = onSnapshot(statusDocRef, doc => {
             const data = doc.data();
             if (data) {
                 setIsStoreOnline(data.isOpen);
@@ -111,9 +94,8 @@ const App: React.FC = () => {
         }, err => handleConnectionError(err, "store status"));
 
         // Listener for categories
-        // FIX: Updated to Firebase v8 syntax.
-        const categoriesQuery = db.collection('categories').orderBy('order');
-        const unsubCategories = categoriesQuery.onSnapshot(snapshot => {
+        const categoriesQuery = query(collection(db, 'categories'), orderBy('order'));
+        const unsubCategories = onSnapshot(categoriesQuery, snapshot => {
             const fetchedCategories: Category[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
             setCategories(fetchedCategories);
             if (fetchedCategories.length > 0 && !activeMenuCategory) {
@@ -122,9 +104,8 @@ const App: React.FC = () => {
         }, err => handleConnectionError(err, "categories"));
 
         // Listener for products
-        // FIX: Updated to Firebase v8 syntax.
-        const productsQuery = db.collection('products').orderBy('orderIndex');
-        const unsubProducts = productsQuery.onSnapshot(snapshot => {
+        const productsQuery = query(collection(db, 'products'), orderBy('orderIndex'));
+        const unsubProducts = onSnapshot(productsQuery, snapshot => {
             const fetchedProducts: Product[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
             setProducts(fetchedProducts);
             setIsLoading(false);
@@ -237,85 +218,74 @@ const App: React.FC = () => {
 
     const handleSaveProduct = useCallback(async (product: Product) => {
         try {
-            const { id, ...dataToSave } = product;
-            if (id) {
-                await firebaseService.updateProduct(id, dataToSave);
-                addToast("Produto atualizado com sucesso!", 'success');
+            if (product.id) {
+                await firebaseService.updateProduct(product);
             } else {
-                await firebaseService.addProduct({ ...dataToSave, orderIndex: products.length });
-                addToast("Produto adicionado com sucesso!", 'success');
+                await firebaseService.addProduct({ ...product, orderIndex: products.length });
             }
         } catch (error) {
             console.error("Failed to save product:", error);
-            addToast("Erro ao salvar produto. Tente novamente.", 'error');
+            alert("Erro ao salvar produto. Tente novamente.");
         }
-    }, [products.length, addToast]);
+    }, [products.length]);
     
     const handleDeleteProduct = useCallback(async (productId: string) => {
         try {
             await firebaseService.deleteProduct(productId);
-            addToast("Produto deletado com sucesso!", 'success');
         } catch (error) {
             console.error("Failed to delete product:", error);
-            addToast("Erro ao deletar produto. Tente novamente.", 'error');
+            alert("Erro ao deletar produto. Tente novamente.");
         }
-    }, [addToast]);
+    }, []);
 
     const handleStoreStatusChange = useCallback(async (isOnline: boolean) => {
         try {
             await firebaseService.updateStoreStatus(isOnline);
-            addToast("Status da loja atualizado.", 'success');
         } catch (error) {
             console.error("Failed to update store status:", error);
-            addToast("Erro ao atualizar status da loja.", 'error');
+            alert("Erro ao atualizar status da loja. Tente novamente.");
         }
-    }, [addToast]);
+    }, []);
     
     const handleSaveCategory = useCallback(async (category: Category) => {
         try {
-            const { id, ...dataToSave } = category;
-            if (id) {
-                await firebaseService.updateCategory(id, dataToSave);
-                addToast("Categoria atualizada com sucesso!", 'success');
+            if (category.id) {
+                await firebaseService.updateCategory(category);
             } else {
-                await firebaseService.addCategory({ ...dataToSave, order: categories.length });
-                addToast("Categoria adicionada com sucesso!", 'success');
+                await firebaseService.addCategory({ ...category, order: categories.length });
             }
         } catch (error) {
             console.error("Failed to save category:", error);
-            addToast("Erro ao salvar categoria.", 'error');
+            alert("Erro ao salvar categoria. Tente novamente.");
         }
-    }, [categories.length, addToast]);
+    }, [categories.length]);
     
     const handleDeleteCategory = useCallback(async (categoryId: string) => {
         try {
             await firebaseService.deleteCategory(categoryId, products);
-            addToast("Categoria deletada com sucesso!", 'success');
         } catch (error) {
             console.error("Failed to delete category:", error);
-            addToast(`Erro ao deletar categoria: ${error.message}`, 'error');
+            alert(`Erro ao deletar categoria: ${error.message}`);
         }
-    }, [products, addToast]);
+    }, [products]);
 
     const handleReorderProducts = useCallback(async (productsToUpdate: { id: string; orderIndex: number }[]) => {
         try {
             await firebaseService.updateProductsOrder(productsToUpdate);
-            addToast("Ordem dos produtos atualizada.", 'success');
         } catch (error) {
             console.error("Failed to reorder products:", error);
-            addToast("Erro ao reordenar produtos.", 'error');
+            alert("Erro ao reordenar produtos. A página pode precisar ser atualizada para refletir a ordem correta.");
         }
-    }, [addToast]);
+    }, []);
 
     const handleReorderCategories = useCallback(async (categoriesToUpdate: { id: string; order: number }[]) => {
         try {
             await firebaseService.updateCategoriesOrder(categoriesToUpdate);
-            addToast("Ordem das categorias atualizada.", 'success');
         } catch (error) {
             console.error("Failed to reorder categories:", error);
-            addToast("Erro ao reordenar categorias.", 'error');
+            alert("Erro ao reordenar categorias. A página pode precisar ser atualizada para refletir a ordem correta.");
         }
-    }, [addToast]);
+    }, []);
 
     const cartTotalItems = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
@@ -396,7 +366,7 @@ const App: React.FC = () => {
                 onUpdateQuantity={handleUpdateCartQuantity}
                 onCheckout={() => {
                     if (!isStoreOnline) {
-                        addToast("A loja está fechada. Não é possível finalizar o pedido.", 'error');
+                        alert("A loja está fechada. Não é possível finalizar o pedido.");
                         return;
                     }
                     setIsCartOpen(false);
@@ -411,34 +381,6 @@ const App: React.FC = () => {
                 cartItems={cart}
                 onConfirmCheckout={handleCheckout}
             />
-            
-            {/* Toast Notification Container */}
-            <div aria-live="assertive" className="fixed inset-0 flex items-end px-4 py-6 pointer-events-none sm:p-6 sm:items-start z-[100]">
-                <div className="w-full flex flex-col items-center space-y-4 sm:items-end">
-                    {toasts.map((toast) => (
-                        <div
-                            key={toast.id}
-                            className="max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden animate-fade-in-up"
-                        >
-                            <div className="p-4">
-                                <div className="flex items-start">
-                                    <div className="flex-shrink-0">
-                                        {toast.type === 'success' ? (
-                                            <i className="fas fa-check-circle h-6 w-6 text-green-500"></i>
-                                        ) : (
-                                            <i className="fas fa-exclamation-circle h-6 w-6 text-red-500"></i>
-                                        )}
-                                    </div>
-                                    <div className="ml-3 w-0 flex-1 pt-0.5">
-                                        <p className="text-sm font-medium text-gray-900">{toast.message}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
         </div>
     );
 };
