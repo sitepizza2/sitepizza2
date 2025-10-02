@@ -470,7 +470,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                                                 .sort((a, b) => a.orderIndex - b.orderIndex);
                                             return (
                                                 <div key={category.id}>
-                                                    <h4 className="text-lg font-semibold mb-2 text-brand-olive-600 pb-1 border-b-2 border-brand-green-300">{category.name}</h4>
+                                                    <h4 className={`text-lg font-semibold mb-2 text-brand-olive-600 pb-1 border-b-2 border-brand-green-300 transition-opacity ${!category.active ? 'opacity-40' : ''}`}>{category.name}</h4>
                                                     <SortableContext items={categoryProducts.map(p => p.id)} strategy={verticalListSortingStrategy}>
                                                         <div className="space-y-3 min-h-[50px]">
                                                             {categoryProducts.map(product => (
