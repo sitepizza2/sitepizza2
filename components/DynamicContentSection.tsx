@@ -21,7 +21,7 @@ export const DynamicContentSection: React.FC<DynamicContentSectionProps> = ({ se
                {section.description}
             </p>
             <div className="space-y-3">
-                {section.list.map((item) => (
+                {(section.list ?? []).map((item) => (
                     item.text && (
                         <div key={item.id} className="flex items-center gap-3">
                             <i className={`${item.icon} text-accent w-5 text-center`}></i>
