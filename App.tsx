@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Product, Category, CartItem, OrderDetails, SiteSettings } from './types';
 import { Header } from './components/Header';
@@ -184,7 +186,7 @@ const App: React.FC = () => {
             const fetchedCategories: Category[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
             setCategories(fetchedCategories);
             if (fetchedCategories.length > 0 && !activeMenuCategory) {
-                setActiveMenuCategory(fetchedCategories[0].id);
+                setActiveMenuCategory(fetchedCategories.filter(c => c.active)[0]?.id || '');
             }
         }, err => handleConnectionError(err, "categories"));
 
@@ -322,6 +324,16 @@ const App: React.FC = () => {
             addToast("Erro ao deletar produto. Tente novamente.", 'error');
         }
     }, [addToast]);
+    
+    const handleProductStatusChange = useCallback(async (productId: string, active: boolean) => {
+        try {
+            await firebaseService.updateProductStatus(productId, active);
+            addToast(`Produto ${active ? 'ativado' : 'desativado'}.`, 'success');
+        } catch (error) {
+            console.error("Failed to update product status:", error);
+            addToast("Erro ao atualizar status do produto.", 'error');
+        }
+    }, [addToast]);
 
     const handleStoreStatusChange = useCallback(async (isOnline: boolean) => {
         try {
@@ -358,6 +370,16 @@ const App: React.FC = () => {
             addToast(`Erro ao deletar categoria: ${error.message}`, 'error');
         }
     }, [products, addToast]);
+    
+    const handleCategoryStatusChange = useCallback(async (categoryId: string, active: boolean) => {
+        try {
+            await firebaseService.updateCategoryStatus(categoryId, active);
+            addToast(`Categoria ${active ? 'ativada' : 'desativada'}.`, 'success');
+        } catch (error) {
+            console.error("Failed to update category status:", error);
+            addToast("Erro ao atualizar status da categoria.", 'error');
+        }
+    }, [addToast]);
 
     const handleReorderProducts = useCallback(async (productsToUpdate: { id: string; orderIndex: number }[]) => {
         try {
@@ -470,9 +492,11 @@ const App: React.FC = () => {
                     siteSettings={siteSettings}
                     onSaveProduct={handleSaveProduct}
                     onDeleteProduct={handleDeleteProduct}
+                    onProductStatusChange={handleProductStatusChange}
                     onStoreStatusChange={handleStoreStatusChange}
                     onSaveCategory={handleSaveCategory}
                     onDeleteCategory={handleDeleteCategory}
+                    onCategoryStatusChange={handleCategoryStatusChange}
                     onReorderProducts={handleReorderProducts}
                     onReorderCategories={handleReorderCategories}
                     onSeedDatabase={seedDatabase}

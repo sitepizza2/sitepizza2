@@ -52,6 +52,12 @@ export const updateProduct = async (productId: string, productData: Omit<Product
     await productRef.update(productData as { [key: string]: any });
 };
 
+export const updateProductStatus = async (productId: string, active: boolean): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const productRef = db.collection('products').doc(productId);
+    await productRef.update({ active });
+};
+
 export const deleteProduct = async (productId: string): Promise<void> => {
     if (!db) throw new Error("Firestore is not initialized.");
     if (!productId) throw new Error("Invalid Product ID for deletion.");
@@ -81,6 +87,12 @@ export const updateCategory = async (categoryId: string, categoryData: Omit<Cate
     if (!db) throw new Error("Firestore is not initialized.");
     const categoryRef = db.collection('categories').doc(categoryId);
     await categoryRef.update(categoryData as { [key: string]: any });
+};
+
+export const updateCategoryStatus = async (categoryId: string, active: boolean): Promise<void> => {
+    if (!db) throw new Error("Firestore is not initialized.");
+    const categoryRef = db.collection('categories').doc(categoryId);
+    await categoryRef.update({ active });
 };
 
 export const deleteCategory = async (categoryId: string, allProducts: Product[]): Promise<void> => {

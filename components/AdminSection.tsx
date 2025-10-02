@@ -17,9 +17,11 @@ interface AdminSectionProps {
     siteSettings: SiteSettings;
     onSaveProduct: (product: Product) => Promise<void>;
     onDeleteProduct: (productId: string) => Promise<void>;
+    onProductStatusChange: (productId: string, active: boolean) => Promise<void>;
     onStoreStatusChange: (isOnline: boolean) => Promise<void>;
     onSaveCategory: (category: Category) => Promise<void>;
     onDeleteCategory: (categoryId: string) => Promise<void>;
+    onCategoryStatusChange: (categoryId: string, active: boolean) => Promise<void>;
     onReorderProducts: (productsToUpdate: { id: string; orderIndex: number }[]) => Promise<void>;
     onReorderCategories: (categoriesToUpdate: { id: string; order: number }[]) => Promise<void>;
     onSeedDatabase: () => Promise<void>;
@@ -30,9 +32,10 @@ interface SortableProductItemProps {
     product: Product;
     onEdit: (product: Product) => void;
     onDelete: (productId: string) => void;
+    onStatusChange: (productId: string, active: boolean) => void;
 }
 
-const SortableProductItem: React.FC<SortableProductItemProps> = ({ product, onEdit, onDelete }) => {
+const SortableProductItem: React.FC<SortableProductItemProps> = ({ product, onEdit, onDelete, onStatusChange }) => {
     const {
         attributes,
         listeners,
@@ -50,14 +53,18 @@ const SortableProductItem: React.FC<SortableProductItemProps> = ({ product, onEd
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
+        <div ref={setNodeRef} style={style} className={`bg-gray-50 p-3 rounded-lg flex justify-between items-center transition-opacity ${!product.active ? 'opacity-50' : ''}`}>
             <div className="flex items-center gap-4">
                 <button {...attributes} {...listeners} className="cursor-grab touch-none p-2" aria-label="Mover produto">
                     <i className="fas fa-grip-vertical text-gray-500 hover:text-gray-800"></i>
                 </button>
                 <p className="font-bold">{product.name}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-4">
+                <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={product.active} onChange={e => onStatusChange(product.id, e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
                 <button onClick={() => onEdit(product)} className="bg-blue-500 text-white w-8 h-8 rounded-md hover:bg-blue-600" aria-label={`Editar ${product.name}`}><i className="fas fa-edit"></i></button>
                 <button onClick={() => window.confirm('Tem certeza que deseja excluir este produto?') && onDelete(product.id)} className="bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600" aria-label={`Deletar ${product.name}`}><i className="fas fa-trash"></i></button>
             </div>
@@ -69,9 +76,10 @@ interface SortableCategoryItemProps {
     category: Category;
     onEdit: (category: Category) => void;
     onDelete: (categoryId: string) => void;
+    onStatusChange: (categoryId: string, active: boolean) => void;
 }
 
-const SortableCategoryItem: React.FC<SortableCategoryItemProps> = ({ category, onEdit, onDelete }) => {
+const SortableCategoryItem: React.FC<SortableCategoryItemProps> = ({ category, onEdit, onDelete, onStatusChange }) => {
     const {
         attributes,
         listeners,
@@ -89,14 +97,18 @@ const SortableCategoryItem: React.FC<SortableCategoryItemProps> = ({ category, o
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="bg-gray-50 p-3 rounded-lg flex justify-between items-center">
+        <div ref={setNodeRef} style={style} className={`bg-gray-50 p-3 rounded-lg flex justify-between items-center transition-opacity ${!category.active ? 'opacity-50' : ''}`}>
             <div className="flex items-center gap-4">
                 <button {...attributes} {...listeners} className="cursor-grab touch-none p-2" aria-label="Mover categoria">
                     <i className="fas fa-grip-vertical text-gray-500 hover:text-gray-800"></i>
                 </button>
                 <p className="font-bold">{category.name}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-4">
+                 <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={category.active} onChange={e => onStatusChange(category.id, e.target.checked)} className="sr-only peer" />
+                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
                 <button onClick={() => onEdit(category)} className="bg-blue-500 text-white w-8 h-8 rounded-md hover:bg-blue-600" aria-label={`Editar ${category.name}`}><i className="fas fa-edit"></i></button>
                 <button onClick={() => window.confirm(`Tem certeza que deseja excluir a categoria "${category.name}"?`) && onDelete(category.id)} className="bg-red-500 text-white w-8 h-8 rounded-md hover:bg-red-600" aria-label={`Deletar ${category.name}`}><i className="fas fa-trash"></i></button>
             </div>
@@ -106,8 +118,8 @@ const SortableCategoryItem: React.FC<SortableCategoryItemProps> = ({ category, o
 
 export const AdminSection: React.FC<AdminSectionProps> = ({ 
     allProducts, allCategories, isStoreOnline, siteSettings,
-    onSaveProduct, onDeleteProduct, onStoreStatusChange,
-    onSaveCategory, onDeleteCategory, onReorderProducts, onReorderCategories,
+    onSaveProduct, onDeleteProduct, onProductStatusChange, onStoreStatusChange,
+    onSaveCategory, onDeleteCategory, onCategoryStatusChange, onReorderProducts, onReorderCategories,
     onSeedDatabase, onSaveSiteSettings
 }) => {
     const [user, setUser] = useState<firebase.User | null>(null);
@@ -467,6 +479,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                                                                     product={product}
                                                                     onEdit={handleEditProduct}
                                                                     onDelete={onDeleteProduct}
+                                                                    onStatusChange={onProductStatusChange}
                                                                 />
                                                             ))}
                                                         </div>
@@ -494,6 +507,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                                                     category={cat}
                                                     onEdit={handleEditCategory}
                                                     onDelete={onDeleteCategory}
+                                                    onStatusChange={onCategoryStatusChange}
                                                 />
                                             ))}
                                         </div>
