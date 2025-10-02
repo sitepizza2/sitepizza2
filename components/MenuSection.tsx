@@ -100,7 +100,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                 
                 <div id="sticky-menu-header" className="sticky top-20 bg-white/95 backdrop-blur-sm z-30 -mx-4 shadow-sm">
                     <div className="border-b border-gray-200">
-                        <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide px-2 sm:px-4">
+                        <div className="flex overflow-x-auto whitespace-nowrap scrollbar-hide px-2 sm:px-4 lg:flex-wrap lg:justify-center lg:overflow-x-visible">
                             {sortedCategories.filter(c => c.active).map(category => (
                                 <button 
                                     key={category.id} 
