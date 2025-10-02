@@ -33,10 +33,10 @@ try {
     experimentalForceLongPolling: true,
   });
 
-  // FIX: Explicitly initialize Storage with the bucket URL.
-  // This is a more robust method that prevents connection issues where the SDK
-  // fails to resolve the default bucket from the firebaseConfig object, fixing the upload issue.
-  storage = app.storage("gs://site-pizza-a2930.appspot.com");
+  // FIX: The initialization is simplified to the standard method.
+  // This lets the SDK correctly use the 'storageBucket' from the config above,
+  // resolving the conflict that caused uploads to hang.
+  storage = app.storage();
   
   // Get Auth service.
   auth = app.auth();
